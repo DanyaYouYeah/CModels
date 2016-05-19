@@ -1,0 +1,15 @@
+.root{
+    -fx-font-size: 11pt;
+    -fx-font-family: "SF UI";
+    -fx-font-weight: lighter;
+    -fx-font-color: #4B7591;
+
+
+}
+
+
+.mainPane{
+    -fx-background-color: #fff;
+}
+
+
