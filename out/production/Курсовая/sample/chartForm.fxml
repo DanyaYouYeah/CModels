@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.chart.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.text.*?>
+<?import com.jfoenix.controls.*?>
+<?import java.lang.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+
+<AnchorPane id="injectPane" fx:id="injectPane" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="527.0" prefWidth="934.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1">
+   <children>
+      <ImageView fitHeight="397.0" fitWidth="706.0" layoutY="-11.0" opacity="0.21" pickOnBounds="true" preserveRatio="true">
+         <image>
+            <Image url="@images/background.png" />
+         </image>
+      </ImageView>
+      <ImageView fitHeight="77.0" fitWidth="175.0" layoutX="23.0" layoutY="14.0" opacity="0.7" pickOnBounds="true" preserveRatio="true">
+         <image>
+            <Image url="@images/Test.png" />
+         </image>
+      </ImageView>
+      <JFXButton fx:id="cancelButton" layoutX="732.0" layoutY="457.0" onAction="#closeMethod" prefHeight="42.0" prefWidth="175.0" text="Закрыть" textAlignment="CENTER" textFill="#4b7591" wrapText="true">
+         <font>
+            <Font name="SFUIText-Regular" size="13.0" />
+         </font>
+      </JFXButton>
+      <LineChart fx:id="dataChart" layoutX="145.0" layoutY="53.0" prefHeight="378.0" prefWidth="734.0">
+        <xAxis>
+          <NumberAxis side="BOTTOM" />
+        </xAxis>
+        <yAxis>
+          <NumberAxis side="LEFT" />
+        </yAxis>
+      </LineChart>
+      <JFXButton fx:id="drawButton" layoutX="576.0" layoutY="458.0" onAction="#drawMethod" prefHeight="42.0" prefWidth="175.0" text="Отобразить" textAlignment="CENTER" textFill="#4b7591" wrapText="true">
+         <font>
+            <Font name="SFUIText-Regular" size="13.0" />
+         </font>
+      </JFXButton>
+      <ImageView fitHeight="302.0" fitWidth="509.0" layoutX="274.0" layoutY="91.0" opacity="0.05" pickOnBounds="true" preserveRatio="true">
+         <image>
+            <Image url="@images/Test.png" />
+         </image>
+      </ImageView>
+      <ComboBox fx:id="drawFirstField" layoutX="175.0" layoutY="467.0" onAction="#fisrtDrawFieldUpdate" prefWidth="150.0" />
+      <ComboBox fx:id="drawSecondField" layoutX="341.0" layoutY="467.0" onAction="#secondDrawFieldUpdate" prefWidth="150.0" />
+      <JFXButton fx:id="saveToPicButton" layoutX="676.0" layoutY="21.0" onAction="#saveToPicture" prefHeight="32.0" prefWidth="204.0" text="Сохранить изображение" textFill="#4b7591" />
+      <JFXButton fx:id="markTurnButton" layoutX="474.0" layoutY="21.0" onAction="#cSymbol" prefHeight="32.0" prefWidth="204.0" text="Убрать маркеры" textFill="#4b7591" />
+   </children>
+</AnchorPane>

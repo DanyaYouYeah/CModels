@@ -7,6 +7,7 @@ import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.ObservableListBase;
+import javafx.embed.swing.SwingFXUtils;
 import javafx.event.*;
 import javafx.event.Event;
 import javafx.fxml.FXML;
@@ -15,9 +16,13 @@ import javafx.fxml.Initializable;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.chart.LineChart;
+import javafx.scene.chart.NumberAxis;
+import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
 import javafx.scene.control.Label;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.image.*;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.text.Text;
@@ -25,6 +30,7 @@ import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.util.Callback;
 
+import javax.imageio.ImageIO;
 import java.awt.*;
 import java.io.*;
 import java.net.URL;
@@ -36,16 +42,17 @@ import java.time.chrono.ChronoLocalDate;
 import java.time.chrono.Chronology;
 import java.util.*;
 
-import static com.sun.javafx.tools.resource.DeployResource.Type.data;
+//import static com.sun.javafx.tools.resource.DeployResource.Type.data;
 
 public class Controller implements Initializable {
     @FXML public AnchorPane mainPane;
     @FXML public TableView tableView;
-    @FXML public JFXButton calculationButton, exportButton, injectButton, clearButton;
+    @FXML public JFXButton calculationButton, exportButton, injectButton, clearButton, generateChart, drawButton;
     @FXML public JFXTextField creditCount, percentCount, monthCount, quantityCount;
-    @FXML public ComboBox percentPicker, typePicker;
+    @FXML public ComboBox percentPicker, typePicker, drawFirstField, drawSecondField;
     @FXML public Text currentDate, firstString, secondString, thirdString, fourthString;
     @FXML public DatePicker datePicker;
+    @FXML public LineChart dataChart;
     public Calendar globalCalendar = Calendar.getInstance();
     public Double monthCounter = -1.0;
     public Double depositInjectionValue;
@@ -53,21 +60,24 @@ public class Controller implements Initializable {
     public Double percentCounter = -1.0;
     public Double mounthPercent;
     public Double monthCreditQuantity;
-    public Integer monthCreditQuantityN;
+    public Integer monthCreditQuantityN, firstDrawParam, secondDrawParam;
     public Integer calcType = 0;
     public Double globalPercent;
     public Integer capitalizationType = 0;
     public Boolean capitalizationDataReady = false;
     public Boolean initiliaze = false;
+    public Boolean dataReady = false;
     public Date depositMinDate, depositMaxDate;
     public int localMonthValue;
     public int localYearValue;
     public int localDayValue;
+    Stage testStage = new Stage();
     private ObservableList<simpleAnnutet> simplePercentList = FXCollections.observableArrayList();
     private ObservableList<complexAnnutet> complexPercentList = FXCollections.observableArrayList();
     private ObservableList<complexDeposit> complexDepositList = FXCollections.observableArrayList();
     Timer timer = new java.util.Timer();
     Date globalTime;
+    XYChart.Series series = new XYChart.Series();
 
 
 
@@ -83,6 +93,7 @@ public class Controller implements Initializable {
         injectButton.setVisible(false);
         exportButton.disableProperty().setValue(true);
         clearButton.disableProperty().setValue(true);
+        generateChart.disableProperty().setValue(true);
     }
 
 
@@ -123,6 +134,8 @@ public class Controller implements Initializable {
 
 
     public void makeCalculation(){
+
+        ///Inject Here Nice Boolean
         clearLists();
         percentCounter = parseDoubleWithDef(percentCount.getText());
         creditCounter = parseDoubleWithDef(creditCount.getText());
@@ -159,10 +172,13 @@ public class Controller implements Initializable {
             return;
         }
 
+
+
         globalPercent = percentCounter * 0.01;
         percentCounter = (100 + percentCounter) * 0.01;
         exportButton.disableProperty().setValue(false);
         clearButton.disableProperty().setValue(false);
+        generateChart.disableProperty().setValue(false);
         switch (calcType){
             case 0:{
                 if (percentPicker.getValue() == "Сложные проценты")
@@ -174,8 +190,10 @@ public class Controller implements Initializable {
                 break;
             }
         }
-
-
+        if (testStage.isShowing()){
+         testStage.close();
+        }
+        dataReady = true;
     }
 
 
@@ -499,8 +517,8 @@ public class Controller implements Initializable {
     public void addFunctionality(){
         //
         if (!initiliaze) {
-            typePicker.getItems().add(0, "Рассчет кредита");
-            typePicker.getItems().add(1, "Рассчет капитализации вклада");
+            typePicker.getItems().add(0, "Расчет кредита");
+            typePicker.getItems().add(1, "Расчет капитализации вклада");
             //percentPicker.getItems().add(0, "Простые проценты");
             percentPicker.getItems().add(0, "Сложные проценты");
             initiliaze = true;
@@ -510,17 +528,22 @@ public class Controller implements Initializable {
     public void interfaceUpdate(){
         percentPicker.getItems().clear();
 
-        if (typePicker.getValue() == "Рассчет кредита"){
+        if (testStage.isShowing()){
+            testStage.close();
+        }
+
+        if (typePicker.getValue() == "Расчет кредита"){
             firstString.setText("Размер кредита");
             secondString.setText("Кол-во месяцев");
             thirdString.setText("Процентная ставка");
             fourthString.setText("Тип процентов");
             calcType = 0;
             percentPicker.getItems().add(0, "Сложные проценты");
+            dataReady = false;
             return;
         }
 
-        if (typePicker.getValue() == "Рассчет капитализации вклада"){
+        if (typePicker.getValue() == "Расчет капитализации вклада"){
             firstString.setText("Размер вклада");
             secondString.setText("Кол-во месяцев");
             thirdString.setText("Процентная ставка");
@@ -529,6 +552,7 @@ public class Controller implements Initializable {
             percentPicker.getItems().add(1, "Раз в полгода");
             percentPicker.getItems().add(2, "Раз в год");
             calcType = 1;
+            dataReady = false;
             return;
         }
 
@@ -805,9 +829,350 @@ public class Controller implements Initializable {
 
     }
 
+
+
+    public void generateChart(){
+        if (!dataReady){
+            Alert alert = new Alert(Alert.AlertType.WARNING);
+            alert.setTitle("Необходимо пересчитать");
+            alert.setHeaderText("Для построения графика, необходимо занового пересчитать данные!");
+            alert.setContentText("Нажмите кнопку 'Рассчитать'");
+            alert.showAndWait();
+            exportButton.disableProperty().setValue(true);
+            return;
+        }
+        switch (calcType) {
+            case 0: {
+                System.out.println("Credit");
+                FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("chartForm.fxml"));
+                fxmlLoader.setController(this);
+                try
+                {
+                    testStage.setScene(new Scene((Parent) fxmlLoader.load()));
+                }
+                catch (IOException e)
+                {
+                    e.printStackTrace();
+                }
+
+                testStage.getIcons().addAll(new javafx.scene.image.Image("sample/images/icon.png"));
+                testStage.show();
+                dataChart.setTitle("График аннуитета");
+                drawFirstField.getItems().add(0, "Платеж");
+                drawFirstField.getItems().add(1, "Денежный поток");
+                drawFirstField.getItems().add(2, "Проценты");
+                drawFirstField.getItems().add(3, "Погашение основного долга");
+                drawFirstField.getItems().add(4, "Остаток основного долга");
+                drawSecondField.setItems(drawFirstField.getItems());
+                break;
+            }
+            case 1: {
+                System.out.println("Deposit");
+                FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("chartForm.fxml"));
+                fxmlLoader.setController(this);
+
+                try
+                {
+                    testStage.setScene(new Scene((Parent) fxmlLoader.load()));
+                }
+                catch (IOException e)
+                {
+                    e.printStackTrace();
+                }
+
+                testStage.getIcons().addAll(new javafx.scene.image.Image("sample/images/icon.png"));
+                testStage.show();
+                dataChart.setTitle("График капитализации вклада");
+                drawFirstField.getItems().add(0, "Номер");
+                drawFirstField.getItems().add(1, "Вклад");
+                drawFirstField.getItems().add(2, "Процентные начисления");
+                drawFirstField.getItems().add(3, "Сумма капитализации");
+                drawFirstField.getItems().add(4, "Внесенная сумма");
+                drawSecondField.setItems(drawFirstField.getItems());
+                break;
+            }
+        }
+
+    }
+
+
+
+
+    public void drawMethod(){
+
+        switch(calcType){
+            case 0:{
+                drawAnnuitetData();
+                break;
+            }
+            case 1:{
+                drawDepositData();
+                break;
+            }
+        }
+    }
+
+
+    @FXML public void cSymbol(){
+        if (dataChart.getCreateSymbols()) {
+            dataChart.setCreateSymbols(false);
+        } else {
+            dataChart.setCreateSymbols(true);
+        }
+    }
+
+
+    public void drawDepositData(){
+        Double[] firtsParam = new Double[complexDepositList.size()];
+        Double[] secondParam = new Double[complexDepositList.size()];
+        final NumberAxis xAxis = new NumberAxis();
+        final NumberAxis yAxis = new NumberAxis();
+        series = new XYChart.Series();
+
+
+        if ((drawFirstField.getValue() == null) || (drawSecondField.getValue() == null)) {
+            Alert alert = new Alert(Alert.AlertType.WARNING);
+            alert.setTitle("Выберите параметр построения графика");
+            alert.setHeaderText("Параметры пусты!");
+            alert.setContentText("Выберите параметры и постройте график");
+            alert.showAndWait();
+            return;
+        }
+
+        switch (drawFirstField.getValue().toString()){
+            case "Номер":{
+                for (int i = 0; i < complexDepositList.size(); ++i){
+                    firtsParam[i] = new Double(complexDepositList.get(i).getPayment());
+                }
+                xAxis.setLabel("Номер");
+                series.setName("Номер к");
+                break;
+            }
+            case "Вклад":{
+                for (int i = 0; i < complexDepositList.size(); ++i){
+                    firtsParam[i] = complexDepositList.get(i).getDepositCounter().doubleValue();
+                }
+                xAxis.setLabel("Вклад");
+                series.setName("Вклад к");
+                break;
+            }
+            case "Процентные начисления":{
+                for (int i = 0; i < complexDepositList.size(); ++i){
+                    firtsParam[i] = complexDepositList.get(i).getPercents().doubleValue();
+                }
+                xAxis.setLabel("Процентные начисления");
+                series.setName("Процентные начисления к");
+                break;
+            }
+            case "Сумма капитализации":{
+                for (int i = 0; i < complexDepositList.size(); ++i){
+                    firtsParam[i] = complexDepositList.get(i).getCapitalizationPercent().doubleValue();
+                }
+                xAxis.setLabel("Сумма капитализации");
+                series.setName("Сумма капитализации к");
+                break;
+            }
+            case "Внесенная сумма":{
+                for (int i = 0; i < complexDepositList.size(); ++i){
+                    firtsParam[i] = complexDepositList.get(i).getDeposit().doubleValue();
+                }
+                xAxis.setLabel("Внесенная сумма");
+                series.setName("Внесенная сумма к");
+                break;
+            }
+        }
+
+        switch (drawSecondField.getValue().toString()){
+            case "Номер":{
+                for (int i = 0; i < complexDepositList.size(); ++i){
+                    secondParam[i] = new Double(complexDepositList.get(i).getPayment().doubleValue());
+                }
+                yAxis.setLabel("Номер");
+                series.setName(series.getName() + " номеру");
+                break;
+            }
+            case "Вклад":{
+                for (int i = 0; i < complexDepositList.size(); ++i){
+                    secondParam[i] = complexDepositList.get(i).getDepositCounter().doubleValue();
+                }
+                yAxis.setLabel("Вклад");
+                series.setName(series.getName() + " вкладу");
+                break;
+            }
+            case "Процентные начисления":{
+                for (int i = 0; i < complexDepositList.size(); ++i){
+                    secondParam[i] = complexDepositList.get(i).getPercents().doubleValue();
+                }
+                yAxis.setLabel("Процентные начисления");
+                series.setName(series.getName() + " процентным начислениям");
+                break;
+            }
+            case "Сумма капитализации":{
+                for (int i = 0; i < complexDepositList.size(); ++i){
+                    secondParam[i] = complexDepositList.get(i).getCapitalizationPercent().doubleValue();
+                }
+                yAxis.setLabel("Сумма капитализации");
+                series.setName(series.getName() + " сумме капитализации");
+                break;
+            }
+            case "Внесенная сумма":{
+                for (int i = 0; i < complexDepositList.size(); ++i){
+                    secondParam[i] = complexDepositList.get(i).getDeposit().doubleValue();
+                }
+                yAxis.setLabel("Внесенная сумма");
+                series.setName(series.getName() + " внесенной сумме");
+                break;
+            }
+        }
+
+
+        for (int i = 0; i < complexDepositList.size(); ++i){
+            series.getData().add(new XYChart.Data(firtsParam[i], secondParam[i]));
+        }
+        dataChart.getData().clear();
+        dataChart.getData().add(series);
+    }
+
+    public void drawAnnuitetData(){
+        Double[] firtsParam = new Double[complexPercentList.size()];
+        Double[] secondParam = new Double[complexPercentList.size()];
+        final NumberAxis xAxis = new NumberAxis();
+        final NumberAxis yAxis = new NumberAxis();
+        dataChart.setTitle("График аннуитета");
+        series = new XYChart.Series();
+
+        if ((drawFirstField.getValue() == null) || (drawSecondField.getValue() == null)) {
+            Alert alert = new Alert(Alert.AlertType.WARNING);
+            alert.setTitle("Выберите параметр построения графика");
+            alert.setHeaderText("Параметры пусты!");
+            alert.setContentText("Выберите параметры и постройте график");
+            alert.showAndWait();
+            return;
+        }
+
+        switch (drawFirstField.getValue().toString()){
+            case "Платеж":{
+                for (int i = 0; i < complexPercentList.size(); ++i){
+                    firtsParam[i] = new Double(complexPercentList.get(i).getPayment().doubleValue());
+                }
+                xAxis.setLabel("Платеж");
+                series.setName("Платеж к");
+                break;
+            }
+            case "Денежный поток":{
+                for (int i = 0; i < complexPercentList.size(); ++i){
+                    firtsParam[i] = complexPercentList.get(i).getCashFlow().doubleValue();
+                }
+                xAxis.setLabel("Денежный поток");
+                series.setName("Денежный поток к");
+                break;
+            }
+            case "Проценты":{
+                for (int i = 0; i < complexPercentList.size(); ++i){
+                    firtsParam[i] = complexPercentList.get(i).getPercent().doubleValue();
+                }
+                xAxis.setLabel("Проценты");
+                series.setName("Проценты к");
+
+                break;
+            }
+            case "Погашение основного долга":{
+                for (int i = 0; i < complexPercentList.size(); ++i){
+                    firtsParam[i] = complexPercentList.get(i).getPayingDebt().doubleValue();
+                }
+                xAxis.setLabel("Погашение основного долга");
+                series.setName("Погашение основного долга к");
+                break;
+            }
+            case "Остаток основного долга":{
+                for (int i = 0; i < complexPercentList.size(); ++i){
+                    firtsParam[i] = complexPercentList.get(i).getDebtBalance().doubleValue();
+                }
+                xAxis.setLabel("Остаток основного долга");
+                series.setName("Остаток основного долга к");
+                break;
+            }
+        }
+
+
+        switch (drawSecondField.getValue().toString()){
+            case "Платеж":{
+                for (int i = 0; i < complexPercentList.size(); ++i){
+                    secondParam[i] = new Double(complexPercentList.get(i).getPayment().doubleValue());
+                }
+                yAxis.setLabel("Платеж");
+                series.setName(series.getName() + " платежу");
+                break;
+            }
+            case "Денежный поток":{
+                for (int i = 0; i < complexPercentList.size(); ++i){
+                    secondParam[i] = complexPercentList.get(i).getCashFlow().doubleValue();
+                }
+                yAxis.setLabel("Денежный поток");
+                series.setName(series.getName() + " денежному потоку");
+                break;
+            }
+            case "Проценты":{
+                for (int i = 0; i < complexPercentList.size(); ++i){
+                    secondParam[i] = complexPercentList.get(i).getPercent().doubleValue();
+                }
+                yAxis.setLabel("Проценты");
+                series.setName(series.getName() + " процентам");
+                break;
+            }
+            case "Погашение основного долга":{
+                for (int i = 0; i < complexPercentList.size(); ++i){
+                    secondParam[i] = complexPercentList.get(i).getPayingDebt().doubleValue();
+                }
+                yAxis.setLabel("Погашение основного долга");
+                series.setName(series.getName() + " погашению основного долга");
+                break;
+            }
+            case "Остаток основного долга":{
+                for (int i = 0; i < complexPercentList.size(); ++i){
+                    secondParam[i] = complexPercentList.get(i).getDebtBalance().doubleValue();
+                }
+                yAxis.setLabel("Остаток основного долга");
+                series.setName(series.getName() + " остатку основного долга");
+                break;
+            }
+        }
+
+
+
+        for (int i = 0; i < complexPercentList.size(); ++i){
+            series.getData().add(new XYChart.Data(firtsParam[i], secondParam[i]));
+        }
+
+        dataChart.getData().clear();
+        dataChart.getData().add(series);
+    }
+
+    public void fisrtDrawFieldUpdate(){
+    }
+
+    public void secondDrawFieldUpdate(){
+    }
+
     public void closeMethod(javafx.event.Event event){
         ((Node)(event.getSource())).getScene().getWindow().hide();
     }
 
+    @FXML void saveToPicture(){
+        WritableImage wim = new WritableImage((int)dataChart.getWidth(), (int)dataChart.getHeight());
+        if (dataChart.getAnimated() == true)
+            dataChart.setAnimated(false);
+        dataChart.snapshot(null, wim);
+        Stage dialogStage = new Stage();
+        FileChooser fileChooser = new FileChooser();
+        File file = fileChooser.showSaveDialog(dialogStage);
+
+        try {
+            ImageIO.write(SwingFXUtils.fromFXImage(wim, null), "png", file);
+        } catch (Exception s) {
+        }
+
+        dataChart.setAnimated(true);
+    }
 
 }
